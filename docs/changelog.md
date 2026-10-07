@@ -6,6 +6,8 @@ All notable Android lab releases are documented here.
 
 ### Added
 
+- Portable Android Lab skills and setup references, with README instructions for installing them in another Android project.
+
 - Codeberg and GitLab mirrors, scheduled mirror issue sync, and public archive jobs.
 
 ### Changed

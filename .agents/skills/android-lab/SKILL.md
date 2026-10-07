@@ -1,5 +1,5 @@
 ---
-name: android-lab
+name: "android-lab"
 description: "Build, run and inspect Android apps through locally built Android Lab Docker images. Use for lab setup, Gradle tasks, emulator operations and device-local port forwarding."
 metadata:
   author: psyb0t
@@ -8,7 +8,7 @@ metadata:
 
 # Android Lab
 
-Use the current project's Makefile for supported operations. It may consume the lab image without containing the lab source. Check its image requirements first. Missing images require the [local image build](https://github.com/psyb0t/android-lab#build-the-images-locally), not a registry pull.
+Use this skill from the Android project being operated on, not from the installed skill directory. The skill supplies instructions, not images or a project Makefile. Read [setup and direct usage](references/setup.md) when the project has no Android Lab integration or the images are missing. Otherwise use the current project's Makefile for supported operations and check its image requirements first.
 
 The tools are embedded at `/opt/android-lab`; `android-lab` is on PATH. Do not call workspace `scripts/lab-device.sh` or infer the workspace from an embedded script's location. `ANDROID_LAB_WORKSPACE` selects the mounted workspace; `ANDROID_PROJECT=.` supports a Gradle project at its root. The wrapper must be executable and pin its distribution checksum.
 
@@ -26,7 +26,7 @@ App flavours may require a different qualified Gradle task. Inspect the app Make
 
 All normal device operations target only the private `emulator:5556`. Do not use host ADB, USB, host SDK state or physical devices. Keep `.android-lab/` ignored; it contains caches, a stable signing identity and saved phone state. Stopping the stack does not authorize deleting that state or resetting an app.
 
-Start with compact layout JSON for UI inspection, then use screenshots/XML when necessary. The viewer binds host loopback, normally port 61326. Forwarding is a tunnel to listeners implemented by the app, not an MCP server supplied by Android Lab.
+Start with compact layout JSON for UI inspection, then use screenshots/XML when necessary. The viewer binds host loopback, normally port 61326. Forwarding exposes the selected device-local TCP listener on host loopback.
 
 Build/lint containers do not get the Docker socket. Lifecycle controllers require it and must mount the workspace at its exact host path for sibling binds. Run as the caller's UID/GID. Read [integration settings](https://github.com/psyb0t/android-lab/blob/main/docs/integration.md) when changing mounts, image overrides or lifecycle configuration.
 

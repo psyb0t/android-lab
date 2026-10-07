@@ -52,6 +52,26 @@ The APK appears in your project's normal build output. Gradle downloads, logs an
 
 Once the images are built, your Android project can use them from any directory.
 
+## Agent skills
+
+Android Lab owns the reusable lab skills. Copy either complete skill directory into an Android project's `.agents/skills/`, or into your agent's configured skill directory. They do not require Dikciz Launcher.
+
+- [android-lab](.agents/skills/android-lab/SKILL.md): local image setup, Docker builds, emulator operations, UI inspection and port forwarding.
+- [android-lab-kotlin](.agents/skills/android-lab-kotlin/SKILL.md): Kotlin, Java and Gradle work through the lab toolchain.
+
+From this checkout, install both into a project that does not already have these skills:
+
+```bash
+PROJECT=/absolute/path/to/your/android-project
+mkdir -p "$PROJECT/.agents/skills"
+for skill in android-lab android-lab-kotlin; do
+  test ! -e "$PROJECT/.agents/skills/$skill" || { echo "Already installed: $skill" >&2; exit 1; }
+  cp -R ".agents/skills/$skill" "$PROJECT/.agents/skills/$skill"
+done
+```
+
+Copy the whole directory, including references. Installing instructions does not build the images or install a Makefile. Follow the local image build above first; the lab skill also covers projects without a lab-aware Makefile. After updating Android Lab, review and refresh your installed copies.
+
 ## Extend the tools
 
 ```dockerfile
