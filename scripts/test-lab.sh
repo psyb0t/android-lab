@@ -21,6 +21,7 @@ trap 'rm -rf -- "$fixture_workspace"' EXIT
 cp -a "$TOOL_ROOT/tests/gradle-project" "$fixture_workspace/project"
 export ANDROID_LAB_WORKSPACE="$fixture_workspace"
 export ANDROID_PROJECT=project GRADLE_TASK=:app:verifyProjectDirectory
+export ANDROID_LAB_TEST_EXPECTED_WORKERS="${ANDROID_LAB_GRADLE_MAX_WORKERS:-10}"
 android-lab gradle
 ANDROID_LAB_WORKSPACE="$fixture_workspace/project" ANDROID_PROJECT=. android-lab gradle
 ANDROID_LAB_TEST_EXPECTED_WORKERS=1 ANDROID_LAB_GRADLE_MAX_WORKERS=1 android-lab gradle

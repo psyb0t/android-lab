@@ -12,9 +12,14 @@ All notable Android lab releases are documented here.
 
 - The README documents generic port forwarding without launcher-specific protocols.
 - Make sizes tool CPU limits and Gradle workers for the Docker host, capped at ten CPUs.
+
 - Split Dikciz Launcher into a standalone repository. Android Lab now embeds generic Gradle, emulator and device commands in local versioned tooling images.
 - Consumers build Android Lab images locally, then use their own Makefiles. Images are not published to a registry.
 - Gradle projects may live at the consumer workspace root. Controllers use explicit host workspace paths and workspace-specific Compose names.
+
+### Fixed
+
+- Lab contract tests check the configured Gradle worker count instead of requiring ten workers on every runner.
 
 ### Migration
 
