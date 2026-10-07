@@ -11,8 +11,8 @@ ANDROID_LAB_ACCEPT_ANDROID_LICENSES ?= $(if $(wildcard $(ANDROID_LAB_LICENSE_MAR
 ANDROID_LAB_UID := $(shell id -u)
 ANDROID_LAB_GID := $(shell id -g)
 ANDROID_LAB_SOCKET_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null || echo 0)
-ANDROID_LAB_GRADLE_MAX_WORKERS ?= 10
-ANDROID_LAB_TOOL_CPU_LIMIT ?= 10
+ANDROID_LAB_TOOL_CPU_LIMIT ?= $(shell docker info --format '{{.NCPU}}' | awk -v maximum=10 '{print ($$1 < maximum ? $$1 : maximum)}')
+ANDROID_LAB_GRADLE_MAX_WORKERS ?= $(shell printf '%s\n' '$(ANDROID_LAB_TOOL_CPU_LIMIT)' | awk '{print ($$1 < 1 ? 1 : int($$1))}')
 ANDROID_LAB_TOOL_MEMORY_LIMIT ?= 8g
 ANDROID_LAB_TOOL_PIDS_LIMIT ?= 2048
 export ANDROID_PROJECT GRADLE_TASK ANDROID_LAB_GRADLE_MAX_WORKERS

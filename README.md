@@ -33,6 +33,8 @@ Nothing is pushed to a registry. Google artifacts are downloaded during your loc
 
 After updating the checkout, run `make build` again. Local image tags derive from `VERSION`; existing tags are not silently selected by newer consumers. Docker reuses unchanged dependency layers. App source and device data never enter either image.
 
+Make limits tool containers to the Docker host's CPU count, capped at 10. Gradle workers follow that limit. Override them with `make build ANDROID_LAB_TOOL_CPU_LIMIT=2 ANDROID_LAB_GRADLE_MAX_WORKERS=2` to leave more CPU time for other work. This does not change the emulator's virtual CPU configuration.
+
 ## Use it from an Android project
 
 Your project needs its executable Gradle wrapper and `distributionSha256Sum` in `gradle/wrapper/gradle-wrapper.properties`.
