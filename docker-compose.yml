@@ -1,0 +1,239 @@
+name: android-lab
+
+services:
+  keygen:
+    image: ${ANDROID_LAB_DEV_IMAGE:?ANDROID_LAB_DEV_IMAGE is required}
+    pull_policy: never
+    user: "${ANDROID_LAB_UID:?ANDROID_LAB_UID is required}:${ANDROID_LAB_GID:?ANDROID_LAB_GID is required}"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    environment:
+      ANDROID_LAB_GID: ${ANDROID_LAB_GID:?ANDROID_LAB_GID is required}
+      ANDROID_LAB_UID: ${ANDROID_LAB_UID:?ANDROID_LAB_UID is required}
+    volumes:
+      - type: bind
+        source: ${ANDROID_LAB_HOST_WORKSPACE:?ANDROID_LAB_HOST_WORKSPACE is required}
+        target: /work
+        read_only: true
+      - type: bind
+        source: ${ANDROID_LAB_STATE_DIRECTORY:-./.android-lab}/adb
+        target: /android-lab/adb
+    command: ["bash", "/opt/android-lab/scripts/keygen-adb.sh"]
+    network_mode: none
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: "0.25"
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  emulator:
+    image: ${ANDROID_LAB_EMULATOR_IMAGE:?ANDROID_LAB_EMULATOR_IMAGE is required}
+    pull_policy: never
+    user: "${ANDROID_LAB_UID:?ANDROID_LAB_UID is required}:${ANDROID_LAB_GID:?ANDROID_LAB_GID is required}"
+    depends_on:
+      keygen:
+        condition: service_completed_successfully
+    devices:
+      - /dev/kvm:/dev/kvm
+    group_add:
+      - "${ANDROID_LAB_KVM_GID:?ANDROID_LAB_KVM_GID is required}"
+    read_only: true
+    tmpfs:
+      - /run:rw,noexec,nosuid,size=16m
+      - /tmp:rw,noexec,nosuid,size=512m
+    volumes:
+      - type: bind
+        source: ${ANDROID_LAB_STATE_DIRECTORY:-./.android-lab}/adb
+        target: /android-lab/adb
+        read_only: true
+      - type: bind
+        source: ${ANDROID_LAB_STATE_DIRECTORY:-./.android-lab}/emulator-data
+        target: /data
+      - type: bind
+        source: ${ANDROID_LAB_EMULATOR_CONTROL_DIRECTORY:-./.android-lab/emulator-control}
+        target: /android-lab/emulator-control
+    networks: [device]
+    environment:
+      HOME: /data/android-lab-home
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    pids_limit: 512
+    mem_limit: 8g
+    cpus: "4.0"
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  adb-bridge:
+    image: ${ANDROID_LAB_DEV_IMAGE:?ANDROID_LAB_DEV_IMAGE is required}
+    pull_policy: never
+    user: "${ANDROID_LAB_UID:?ANDROID_LAB_UID is required}:${ANDROID_LAB_GID:?ANDROID_LAB_GID is required}"
+    depends_on:
+      emulator:
+        condition: service_started
+    network_mode: service:emulator
+    read_only: true
+    volumes:
+      - type: bind
+        source: ${ANDROID_LAB_HOST_WORKSPACE:?ANDROID_LAB_HOST_WORKSPACE is required}
+        target: /work
+        read_only: true
+    command: ["bash", "/opt/android-lab/scripts/adb-bridge.sh"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    pids_limit: 64
+    mem_limit: 64m
+    cpus: "0.10"
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  forward:
+    image: ${ANDROID_LAB_DEV_IMAGE:?ANDROID_LAB_DEV_IMAGE is required}
+    pull_policy: never
+    user: "${ANDROID_LAB_UID:?ANDROID_LAB_UID is required}:${ANDROID_LAB_GID:?ANDROID_LAB_GID is required}"
+    depends_on:
+      adb-bridge:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=512m
+    environment:
+      ANDROID_LAB_FORWARD_DEVICE_PORT: ${ANDROID_LAB_FORWARD_DEVICE_PORT:-19001}
+      ANDROID_LAB_FORWARD_HOST_PORT: ${ANDROID_LAB_FORWARD_HOST_PORT:-19001}
+      ANDROID_LAB_MCP_DEVICE_PORT: ${ANDROID_LAB_MCP_DEVICE_PORT:-19002}
+      ANDROID_LAB_MCP_HOST_PORT: ${ANDROID_LAB_MCP_HOST_PORT:-19002}
+      ANDROID_LAB_SERIAL: emulator:5556
+      HOME: /tmp/android-lab-home
+    volumes:
+      - type: bind
+        source: ${ANDROID_LAB_HOST_WORKSPACE:?ANDROID_LAB_HOST_WORKSPACE is required}
+        target: /work
+        read_only: true
+      - type: bind
+        source: ${ANDROID_LAB_STATE_DIRECTORY:-./.android-lab}/adb
+        target: /android-lab/adb
+        read_only: true
+      - type: bind
+        source: ${ANDROID_LAB_STATE_DIRECTORY:-./.android-lab}/artifacts
+        target: /artifacts
+      - type: bind
+        source: ${ANDROID_LAB_EMULATOR_CONTROL_DIRECTORY:-./.android-lab/emulator-control}
+        target: /android-lab/emulator-control
+        read_only: true
+    networks: [device, edge]
+    ports:
+      - "127.0.0.1:${ANDROID_LAB_FORWARD_HOST_PORT:-19001}:${ANDROID_LAB_FORWARD_HOST_PORT:-19001}"
+      - "127.0.0.1:${ANDROID_LAB_MCP_HOST_PORT:-19002}:${ANDROID_LAB_MCP_HOST_PORT:-19002}"
+    command: ["bash", "/opt/android-lab/scripts/adb-forward.sh"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    # This service forwards the device ports and also runs the release test
+    # suite, which is what its memory and processor share are sized for. A
+    # forwarder needs almost nothing; pytest driving 250 real device tests
+    # needs room to hold its report and more than a quarter of a core. The
+    # process budget stays where the isolation contract fixes it.
+    pids_limit: 64
+    mem_limit: 4g
+    cpus: "4.0"
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  web-vnc:
+    image: ${ANDROID_LAB_DEV_IMAGE:?ANDROID_LAB_DEV_IMAGE is required}
+    pull_policy: never
+    user: "${ANDROID_LAB_UID:?ANDROID_LAB_UID is required}:${ANDROID_LAB_GID:?ANDROID_LAB_GID is required}"
+    depends_on:
+      emulator:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    networks: [device, edge]
+    ports:
+      - "127.0.0.1:${ANDROID_LAB_VNC_HOST_PORT:-61325}:61325"
+    command: ["novnc_server", "--listen", "61325", "--vnc", "emulator:5900"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:61325/vnc.html"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: "0.25"
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  lab:
+    image: ${ANDROID_LAB_DEV_IMAGE:?ANDROID_LAB_DEV_IMAGE is required}
+    pull_policy: never
+    user: "${ANDROID_LAB_UID:?ANDROID_LAB_UID is required}:${ANDROID_LAB_GID:?ANDROID_LAB_GID is required}"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    environment:
+      ANDROID_LAB_SERIAL: emulator:5556
+      HOME: /tmp/android-lab-home
+    volumes:
+      - type: bind
+        source: ${ANDROID_LAB_HOST_WORKSPACE:?ANDROID_LAB_HOST_WORKSPACE is required}
+        target: /work
+        read_only: true
+      - type: bind
+        source: ${ANDROID_LAB_STATE_DIRECTORY:-./.android-lab}/artifacts
+        target: /artifacts
+      - type: bind
+        source: ${ANDROID_LAB_STATE_DIRECTORY:-./.android-lab}/adb
+        target: /android-lab/adb
+        read_only: true
+      - type: bind
+        source: ${ANDROID_LAB_EMULATOR_CONTROL_DIRECTORY:-./.android-lab/emulator-control}
+        target: /android-lab/emulator-control
+        read_only: true
+    networks: [device]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: "1.0"
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  device:
+    internal: true
+  edge: {}

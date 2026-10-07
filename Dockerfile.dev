@@ -1,0 +1,94 @@
+# Docker-only controller for the isolated Android emulator lab.
+FROM docker:29.7.2-cli@sha256:e650b7a58d7f56be91d4f7be799196380a3bbc1bcbc41f1f4dff1b36ac309e1e
+
+ARG ANDROID_API=36
+ARG ANDROID_LAB_ACCEPT_ANDROID_LICENSES
+
+RUN apk add --no-cache \
+	android-tools=35.0.2-r21 \
+	bash=5.3.9-r1 \
+	ca-certificates \
+	coreutils=9.11-r0 \
+	curl \
+	diffutils=3.12-r0 \
+	gcompat \
+	jq=1.8.2-r0 \
+	make=4.4.1-r4 \
+	openjdk17-jdk=17.0.20_p8-r0 \
+	patch=2.8-r0 \
+	python3=3.14.8-r0 \
+	py3-pytest=9.0.3-r0 \
+	ripgrep=15.1.0-r0 \
+	shellcheck=0.11.0-r1 \
+	socat=1.8.1.3-r0 \
+	shfmt=3.13.1-r2 \
+	unzip
+
+COPY scripts/resolve_android_downloads.py /usr/local/bin/resolve_android_downloads.py
+
+RUN set -eux; \
+	case "$ANDROID_API" in ''|*[!0-9]*) exit 1 ;; esac; \
+	test "$ANDROID_LAB_ACCEPT_ANDROID_LICENSES" = yes; \
+	metadata="$(python3 /usr/local/bin/resolve_android_downloads.py --api "$ANDROID_API")"; \
+	platform_url="$(printf '%s\n' "$metadata" | jq -er '.platform.url')"; \
+	platform_sha1="$(printf '%s\n' "$metadata" | jq -er '.platform.sha1')"; \
+	platform_tools_url="$(printf '%s\n' "$metadata" | jq -er '.platform_tools.url')"; \
+	platform_tools_sha1="$(printf '%s\n' "$metadata" | jq -er '.platform_tools.sha1')"; \
+	build_tools_url="$(printf '%s\n' "$metadata" | jq -er '.build_tools.url')"; \
+	build_tools_sha1="$(printf '%s\n' "$metadata" | jq -er '.build_tools.sha1')"; \
+	build_tools_version="$(printf '%s\n' "$metadata" | jq -er '.build_tools.version')"; \
+	case "$platform_url" in https://dl.google.com/android/repository/*) ;; *) exit 1 ;; esac; \
+	case "$platform_tools_url" in https://dl.google.com/android/repository/*) ;; *) exit 1 ;; esac; \
+	case "$build_tools_url" in https://dl.google.com/android/repository/*) ;; *) exit 1 ;; esac; \
+	echo "$platform_sha1  /tmp/platform.zip" > /tmp/android-lab-checksums; \
+	echo "$platform_tools_sha1  /tmp/platform-tools.zip" >> /tmp/android-lab-checksums; \
+	echo "$build_tools_sha1  /tmp/build-tools.zip" >> /tmp/android-lab-checksums; \
+	curl --fail --location --retry 3 --output /tmp/platform.zip "$platform_url"; \
+	curl --fail --location --retry 3 --output /tmp/platform-tools.zip "$platform_tools_url"; \
+	curl --fail --location --retry 3 --output /tmp/build-tools.zip "$build_tools_url"; \
+	sha1sum --check --strict /tmp/android-lab-checksums; \
+	mkdir --parents /opt/android-sdk/licenses /opt/android-sdk/platforms /opt/android-sdk/build-tools /tmp/android-lab-platform /tmp/android-lab-platform-tools /tmp/android-lab-build-tools; \
+	printf '%s\n' \
+		24333f8a63b6825ea9c5514f83c2829b004d1fee \
+		84831b9409646a918e30573bab4c9c91346d8abd \
+		8933bad161af4178b1185d1a37fbf41ea5269c55 \
+		d56f5187479451eabf01fb78af6dfcb131a6481e \
+		> /opt/android-sdk/licenses/android-sdk-license; \
+	unzip -q /tmp/platform.zip -d /tmp/android-lab-platform; \
+	unzip -q /tmp/platform-tools.zip -d /tmp/android-lab-platform-tools; \
+	unzip -q /tmp/build-tools.zip -d /tmp/android-lab-build-tools; \
+	platform_directory_count="$(find /tmp/android-lab-platform -mindepth 1 -maxdepth 1 -type d | wc -l)"; \
+	platform_tools_directory_count="$(find /tmp/android-lab-platform-tools -mindepth 1 -maxdepth 1 -type d | wc -l)"; \
+	build_tools_directory_count="$(find /tmp/android-lab-build-tools -mindepth 1 -maxdepth 1 -type d | wc -l)"; \
+	test "$platform_directory_count" -eq 1; \
+	test "$platform_tools_directory_count" -eq 1; \
+	test "$build_tools_directory_count" -eq 1; \
+	platform_root="$(find /tmp/android-lab-platform -mindepth 1 -maxdepth 1 -type d -print -quit)"; \
+	platform_tools_root="$(find /tmp/android-lab-platform-tools -mindepth 1 -maxdepth 1 -type d -print -quit)"; \
+	build_tools_root="$(find /tmp/android-lab-build-tools -mindepth 1 -maxdepth 1 -type d -print -quit)"; \
+	mv "$platform_root" "/opt/android-sdk/platforms/android-${ANDROID_API}"; \
+	mv "$platform_tools_root" /opt/android-sdk/platform-tools; \
+	mv "$build_tools_root" "/opt/android-sdk/build-tools/${build_tools_version}"; \
+	test -d "/opt/android-sdk/platforms/android-${ANDROID_API}"; \
+	test -d /opt/android-sdk/platform-tools; \
+	test -d "/opt/android-sdk/build-tools/${build_tools_version}"; \
+	rm -rf /tmp/android-lab-platform /tmp/android-lab-platform-tools /tmp/android-lab-build-tools; \
+	rm -f /tmp/platform.zip /tmp/platform-tools.zip /tmp/build-tools.zip /tmp/android-lab-checksums /tmp/android-lab-resolve.log /usr/local/bin/resolve_android_downloads.py
+
+RUN apk add --no-cache \
+	novnc=1.6.0-r1 \
+	websockify=0.13.0-r2
+
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+
+WORKDIR /work
+
+COPY scripts /opt/android-lab/scripts
+COPY docker-compose.yml VERSION /opt/android-lab/
+COPY tests /opt/android-lab/tests
+
+RUN chmod 0755 /opt/android-lab/scripts/*.sh \
+	&& ln -s /opt/android-lab/scripts/cli.sh /usr/local/bin/android-lab
+
+CMD ["bash"]

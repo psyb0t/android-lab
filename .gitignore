@@ -1,0 +1,51 @@
+# Codex / agent scratch
+AGENTS.md
+CODEX.local.md
+CLAUDE.md
+git-update.sh
+.research_files/
+.research-files/
+.agent_notes/
+.agent_knowledge/
+.agents/upstreams/
+PLAN.md
+implplan.md
+NOTES.md
+TODO.md
+WIP.md
+
+# Android lab state and artifacts
+.android-lab/
+__pycache__/
+.pytest_cache/
+coverage.txt
+coverage.out
+profile.out
+.cover/
+htmlcov/
+.claude/
+*.py[cod]
+**/build/
+**/build-secondary/
+
+# Secrets
+.env
+.env.local
+.env.*
+!.env.example
+
+# Editor / IDE
+.vscode/
+.idea/
+.editorconfig
+.envrc
+.tool-versions
+.python-version
+.nvmrc
+pyrightconfig.json
+
+.testing/
+.anustimes/
+.brutal_reviews/
+.telemetry/
+.plan-and-delegate/

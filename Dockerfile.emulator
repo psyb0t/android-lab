@@ -1,0 +1,105 @@
+# Built locally from Google-published SDK artifacts whose SHA-1 values come
+# from Google's repository metadata at build time.
+FROM ubuntu:24.04@sha256:1e0a86e57d247923571b75e0aaf48a1449cf8c543d51fb3e07a4a7d7bfa79316
+
+ARG ANDROID_API
+ARG EMULATOR_URL
+ARG EMULATOR_SHA1
+ARG PLATFORM_TOOLS_URL
+ARG PLATFORM_TOOLS_SHA1
+ARG SYSTEM_IMAGE_URL
+ARG SYSTEM_IMAGE_SHA1
+
+RUN apt-get update \
+	&& apt-get install --yes --no-install-recommends \
+		ca-certificates \
+		curl \
+		jq \
+		libasound2t64 \
+		libdbus-1-3 \
+		libfontconfig1 \
+		libgcc-s1 \
+		libgl1 \
+		libnss3 \
+		libpulse0 \
+		libstdc++6 \
+		libtinfo6 \
+		libx11-6 \
+		libxcb1 \
+		libxcomposite1 \
+		libxcursor1 \
+		libxdamage1 \
+		libxext6 \
+		libxfixes3 \
+		libxi6 \
+		libxkbcommon0 \
+		unzip \
+		zlib1g \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+	mkdir --parents /opt/android-sdk /tmp/android-lab-downloads; \
+	curl --fail --location --retry 3 --output /tmp/android-lab-downloads/emulator.zip "$EMULATOR_URL"; \
+	echo "$EMULATOR_SHA1  /tmp/android-lab-downloads/emulator.zip" | sha1sum --check --strict; \
+	unzip -q /tmp/android-lab-downloads/emulator.zip -d /opt/android-sdk; \
+	curl --fail --location --retry 3 --output /tmp/android-lab-downloads/platform-tools.zip "$PLATFORM_TOOLS_URL"; \
+	echo "$PLATFORM_TOOLS_SHA1  /tmp/android-lab-downloads/platform-tools.zip" | sha1sum --check --strict; \
+	unzip -q /tmp/android-lab-downloads/platform-tools.zip -d /opt/android-sdk; \
+	mkdir --parents "/opt/android-sdk/system-images/android-${ANDROID_API}/google_apis"; \
+	curl --fail --location --retry 3 --output /tmp/android-lab-downloads/system-image.zip "$SYSTEM_IMAGE_URL"; \
+	echo "$SYSTEM_IMAGE_SHA1  /tmp/android-lab-downloads/system-image.zip" | sha1sum --check --strict; \
+	unzip -q /tmp/android-lab-downloads/system-image.zip -d "/opt/android-sdk/system-images/android-${ANDROID_API}/google_apis"; \
+	rm -rf /tmp/android-lab-downloads
+
+RUN apt-get update \
+	&& apt-get install --yes --no-install-recommends \
+		libxcb-cursor0 \
+		openbox \
+		x11-utils \
+		x11vnc \
+		xdotool \
+		xvfb \
+	&& rm -rf /var/lib/apt/lists/*
+
+COPY scripts/emulator-entrypoint.sh /usr/local/bin/android-lab-emulator
+
+RUN chmod 0755 /usr/local/bin/android-lab-emulator \
+	&& mkdir --parents /opt/android-home/.android/avd/android-lab.avd \
+	&& printf '%s\n' \
+		'avd.ini.encoding=UTF-8' \
+		'path=/data/android-lab-home/.android/avd/android-lab.avd' \
+		'path.rel=avd/android-lab.avd' \
+		'target=android-'"${ANDROID_API}" \
+		> /opt/android-home/.android/avd/android-lab.ini \
+	&& printf '%s\n' \
+		'AvdId=android-lab' \
+		'abi.type=x86_64' \
+		'avd.ini.displayname=Android Lab' \
+		'avd.ini.encoding=UTF-8' \
+		'hw.cpu.ncore=4' \
+		'hw.cpu.arch=x86_64' \
+		'hw.device.name=pixel_7' \
+		'hw.keyboard=yes' \
+		'hw.lcd.density=420' \
+		'hw.lcd.height=2400' \
+		'hw.lcd.width=1080' \
+		'hw.ramSize=4096' \
+		'image.sysdir.1=system-images/android-'"${ANDROID_API}"'/google_apis/x86_64/' \
+		'PlayStore.enabled=false' \
+		'showDeviceFrame=no' \
+		'skin.dynamic=yes' \
+		'skin.name=1080x2400' \
+		'skin.path=_no_skin' \
+		'tag.display=Google APIs' \
+		'tag.id=google_apis' \
+		> /opt/android-home/.android/avd/android-lab.avd/config.ini
+
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH=/opt/android-sdk/emulator:/opt/android-sdk/platform-tools:${PATH}
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=18 \
+	CMD adb connect 127.0.0.1:5555 >/dev/null 2>&1 \
+	&& adb -s 127.0.0.1:5555 shell getprop sys.boot_completed | grep -qx 1
+
+ENTRYPOINT ["/usr/local/bin/android-lab-emulator"]
