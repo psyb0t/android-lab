@@ -50,7 +50,7 @@ docker run --rm --init --user "$(id -u):$(id -g)" \
 
 The APK appears in your project's normal build output. Gradle downloads, logs and the stable debug-signing identity stay under that project's `.android-lab/`. Ignore that directory in Git. Run the container as your host UID/GID so it does not leave root-owned output behind.
 
-The lab checkout is needed to build the images, not to run app builds afterwards. [Dikciz Launcher](https://github.com/psyb0t/dikciz-launcher) exposes its build, install, test and inspection commands through its own Makefile.
+Once the images are built, your Android project can use them from any directory.
 
 ## Extend the tools
 
@@ -64,7 +64,7 @@ FROM android-lab:0.13.0
 docker build -t my-android-tools:1 .
 ```
 
-The embedded `android-lab` command still works. Consumers that start an emulator or forwarding service must also select the derived image as `ANDROID_LAB_DEV_IMAGE`; those sibling services need the same extra tools. Dikciz's Makefile accepts `DEV_IMAGE=my-android-tools:1`.
+The derived image keeps the `android-lab` command. Set `DEV_IMAGE=my-android-tools:1` when using Make, or `ANDROID_LAB_DEV_IMAGE=my-android-tools:1` for direct emulator-management commands, so helper containers use your extra tools too.
 
 ## Boot and inspect a phone
 
@@ -82,15 +82,14 @@ Open `http://127.0.0.1:61326/vnc.html?autoconnect=true&resize=scale` while it is
 
 `make help` lists generic device operations, including APK installation, Home role selection, shell commands, file transfer and emulator event fixtures. Device operations use only the private `emulator:5556` ADB endpoint.
 
-## Device-local listeners
+## Forward a device port
 
 ```bash
-make forward ANDROID_LAB_FORWARD_HOST_PORT=19001 ANDROID_LAB_FORWARD_DEVICE_PORT=19001 \
-  ANDROID_LAB_MCP_HOST_PORT=19002 ANDROID_LAB_MCP_DEVICE_PORT=19002
+make forward ANDROID_LAB_FORWARD_HOST_PORT=18080 ANDROID_LAB_FORWARD_DEVICE_PORT=8080
 make unforward
 ```
 
-These are TCP tunnels for listeners implemented by your app. Android Lab does not supply a WebSocket or MCP server. Published viewer and tunnel ports bind host loopback; ADB is not published.
+This makes device port `8080` available at `127.0.0.1:18080` on the host. Run `make unforward` when finished. Forwarded ports and the viewer bind host loopback.
 
 ## Workspaces and Docker access
 

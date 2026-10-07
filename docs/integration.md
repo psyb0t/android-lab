@@ -8,7 +8,7 @@ The tools live in `/opt/android-lab`. `android-lab version`, `android-lab gradle
 
 ## Workspace and state
 
-`ANDROID_LAB_WORKSPACE` selects the mounted project root, defaulting to the current directory. `ANDROID_PROJECT` selects a relative directory within it, including `.`. The Gradle runner rejects escaping symlinks and traversal, requires an executable wrapper with its distribution checksum, and accepts one fully qualified task through `GRADLE_TASK`. `ANDROID_LAB_GRADLE_MAX_WORKERS` defaults to 10 and accepts 1 through 10.
+`ANDROID_LAB_WORKSPACE` selects the mounted project root, defaulting to the current directory. `ANDROID_PROJECT` selects a relative directory within it, including `.`. The Gradle runner rejects escaping symlinks and traversal, requires an executable wrapper with its distribution checksum, and accepts one fully qualified task through `GRADLE_TASK`. `ANDROID_LAB_GRADLE_MAX_WORKERS` accepts 1 through 10. Make derives its default from the tool CPU limit; a direct CLI call defaults to 10.
 
 Gradle cache and debug-signing identity live in `.android-lab/gradle/` and `.android-lab/java-home/`. Phone data, ADB keys, forwarding metadata and artifacts live in `.android-lab/shared/`. The lab never binds the caller's home directory. Do not delete this directory to upgrade the tools.
 
@@ -27,8 +27,8 @@ The default Compose name is a hash of the workspace path. `ANDROID_LAB_COMPOSE_P
 | `ANDROID_LAB_UID`, `ANDROID_LAB_GID` | Required numeric caller identity for lifecycle CLI calls. Make supplies the host UID/GID. |
 | `ANDROID_LAB_VNC_HOST_PORT` | Viewer loopback port, default 61326. |
 | `ANDROID_LAB_FORWARD_HOST_PORT`, `ANDROID_LAB_FORWARD_DEVICE_PORT` | First tunnel host/device ports, default 19001. |
-| `ANDROID_LAB_MCP_HOST_PORT`, `ANDROID_LAB_MCP_DEVICE_PORT` | Second tunnel host/device ports, default 19002. The name describes a common use, not an MCP server supplied by the lab. |
-| `ANDROID_LAB_TOOL_CPU_LIMIT`, `ANDROID_LAB_TOOL_MEMORY_LIMIT`, `ANDROID_LAB_TOOL_PIDS_LIMIT` | Make's tooling-container bounds, default 10 CPUs, 8g and 2048 PIDs. |
+| `ANDROID_LAB_MCP_HOST_PORT`, `ANDROID_LAB_MCP_DEVICE_PORT` | Second TCP tunnel host/device ports, default 19002. |
+| `ANDROID_LAB_TOOL_CPU_LIMIT`, `ANDROID_LAB_TOOL_MEMORY_LIMIT`, `ANDROID_LAB_TOOL_PIDS_LIMIT` | Make's tooling-container bounds. CPU count defaults to the Docker host's capacity, capped at 10; memory and PIDs default to 8g and 2048. |
 | `ANDROID_LAB_ACCESSIBILITY_SERVICE_CLASS` | Dotted app service class for explicitly requested accessibility enable/disable operations. |
 | `ANDROID_LAB_EXTENSION` | Explicit workspace-relative trusted shell extension, described below. |
 
