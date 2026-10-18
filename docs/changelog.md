@@ -2,6 +2,12 @@
 
 All notable Android lab releases are documented here.
 
+## Unreleased
+
+### Added
+
+- `AGENTS.md` is tracked. It documents the lab workflow and the version references to update when `VERSION` changes.
+
 ## [0.13.0] - 2026-10-18
 
 ### Added
