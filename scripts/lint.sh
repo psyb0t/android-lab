@@ -20,7 +20,7 @@ trap on_error ERR
 LOG_FILE="${LOG_FILE:-/tmp/android-lab-lint.log}"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-shellcheck scripts/*.sh
-shfmt -d scripts/*.sh
+shellcheck install.sh scripts/*.sh
+shfmt -d install.sh scripts/*.sh
 python3 -m compileall -q scripts
 log INFO "Android lab lint passed"

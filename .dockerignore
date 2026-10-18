@@ -21,6 +21,7 @@ dikciz-launcher/
 *.log
 coverage.*
 git-update.sh
+git-update.sh.debot
 .telemetry/
 .plan-and-delegate/
 

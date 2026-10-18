@@ -21,7 +21,7 @@ RUN apk add --no-cache \
 	ripgrep=15.1.0-r0 \
 	shellcheck=0.11.0-r1 \
 	socat=1.8.1.3-r0 \
-	shfmt=3.13.1-r2 \
+	shfmt=3.13.1-r3 \
 	unzip
 
 COPY scripts/resolve_android_downloads.py /usr/local/bin/resolve_android_downloads.py

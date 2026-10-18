@@ -10,19 +10,25 @@ Build an Android app, boot a phone, poke its UI. Keep the SDK and emulator out o
 
 The host needs Linux on x86_64, Docker with Compose v2, Make, Git and usable `/dev/kvm`. The build tools use Java 17 and Android API 36. The emulator is a persistent Google APIs x86_64 phone, 1080×2400, with four virtual cores and 4 GiB guest RAM.
 
+Read the [Android SDK license](https://developer.android.com/studio/terms). If you accept it, install a release by its version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/psyb0t/android-lab/main/install.sh \
+  | ANDROID_LAB_ACCEPT_ANDROID_LICENSES=yes bash -s -- 0.13.0 --emulator
+```
+
+The installer checks out the `v0.13.0` tag into a temporary directory, builds it with that tag's own Makefile, deletes the checkout and prints the image names. Images that already exist are kept, so a second run returns at once. Drop `--emulator` when you only need the build tools, for example in CI. `--force` rebuilds, `--api` selects another Android API and `--help` lists the rest.
+
+To build the source you have checked out instead, for example while working on Android Lab itself:
+
 ```bash
 git clone https://github.com/psyb0t/android-lab.git
 cd android-lab
-```
-
-Read the [Android SDK license](https://developer.android.com/studio/terms). If you accept it:
-
-```bash
 ANDROID_LAB_ACCEPT_ANDROID_LICENSES=yes make accept-licenses
 make build
 ```
 
-That creates these images on your own Docker daemon:
+Either way, these images land on your own Docker daemon:
 
 ```text
 android-lab:0.13.0
@@ -31,7 +37,7 @@ android-lab:0.13.0-emulator-api36
 
 Nothing is pushed to a registry. Google artifacts are downloaded during your local build and checked against Google's repository metadata. Keep these SDK-equipped images local. The tool image contains ADB, Java, SDK platform/build tools, Python, pytest, shell tooling, Docker/Compose, noVNC and the lab scripts. The emulator image contains the emulator, system image and its display stack.
 
-After updating the checkout, run `make build` again. Local image tags derive from `VERSION`; existing tags are not silently selected by newer consumers. Docker reuses unchanged dependency layers. App source and device data never enter either image.
+Local image tags derive from `VERSION`. A consumer names the exact version it needs and installs it with the command above. It never picks up an older or newer local image by accident, and several versions can sit side by side. After updating a checkout, run `make build` again. Docker reuses unchanged dependency layers. App source and device data never enter either image.
 
 Make limits tool containers to the Docker host's CPU count, capped at 10. Gradle workers follow that limit. Override them with `make build ANDROID_LAB_TOOL_CPU_LIMIT=2 ANDROID_LAB_GRADLE_MAX_WORKERS=2` to leave more CPU time for other work. This does not change the emulator's virtual CPU configuration.
 

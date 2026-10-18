@@ -20,6 +20,6 @@ trap on_error ERR
 LOG_FILE="${LOG_FILE:-/tmp/android-lab-format.log}"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-shfmt -w scripts/*.sh
+shfmt -w install.sh scripts/*.sh
 python3 -m compileall -q scripts
 log INFO "Android lab sources formatted"

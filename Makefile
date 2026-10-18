@@ -48,7 +48,7 @@ DEVICE_TARGETS := device-info apk-install screenshot uiautomator-dump ui-layout 
 	emulator-notification-policy-access-set emulator-interruption-filter-set accessibility-on accessibility-off \
 	calendar-fixture-create calendar-fixture-update calendar-fixture-delete contacts-fixture-create contacts-fixture-delete file-pull file-push
 .PHONY: help build dev-image image accept-licenses ensure-dev-image emulator-ready shell gradle app-build app-test app-lint \
-	lint format test audit-compose run restart stop status forward unforward test-emulator test-forward test-vnc version navigation-buttons clean $(DEVICE_TARGETS)
+	lint format test test-install audit-compose run restart stop status forward unforward test-emulator test-forward test-vnc version navigation-buttons clean $(DEVICE_TARGETS)
 
 help: ## List lab operations
 	@grep -E '^[a-zA-Z_-]+:.*## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "%-22s %s\n", $$1, $$2}' | sort
@@ -91,7 +91,9 @@ lint: ensure-dev-image ## Check shell syntax, formatting and Python compilation
 	@$(DEV_RUN) bash /work/scripts/lint.sh
 format: ensure-dev-image ## Format the lab's own sources
 	@$(DEV_RUN) bash /work/scripts/format.sh
-test: audit-compose ## Test the embedded commands and private Compose configuration
+test: audit-compose test-install ## Test the embedded commands, private Compose configuration and release installer
+test-install: ensure-dev-image ## Exercise install.sh with stubbed Docker, Git and Make
+	@$(DEV_RUN) bash /work/scripts/test-install.sh
 audit-compose: ensure-dev-image ## Exercise the image's embedded fixture and Compose contracts
 	@$(DEV_RUN) android-lab check
 

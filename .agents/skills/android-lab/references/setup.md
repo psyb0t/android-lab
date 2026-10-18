@@ -4,7 +4,14 @@ The installed skill can live anywhere. Run commands from the user's selected And
 
 ## Images
 
-Read the [local image build instructions](https://github.com/psyb0t/android-lab#build-the-images-locally). Build in a separate Android Lab checkout after the user accepts the SDK license. Use the matching local tool and emulator tags from that checkout's `VERSION`. Do not silently pull a different image or record license acceptance for the user.
+Read the [local image build instructions](https://github.com/psyb0t/android-lab#build-the-images-locally). After the user accepts the SDK license, install the exact release the project pins:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/psyb0t/android-lab/main/install.sh \
+  | ANDROID_LAB_ACCEPT_ANDROID_LICENSES=yes bash -s -- 0.13.0 --emulator
+```
+
+Drop `--emulator` when only Gradle builds are needed. Use the tags it prints. Do not substitute a different version or record license acceptance for the user.
 
 ## A project without a lab-aware Makefile
 

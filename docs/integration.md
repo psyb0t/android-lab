@@ -4,6 +4,19 @@
 
 Build a selected release with `make build` after accepting the Android SDK license. `VERSION` controls both local tags: `android-lab:<version>` and `android-lab:<version>-emulator-api<api>`. No workflow pushes either image. Rebuild after updating the checkout; Docker caches unchanged layers.
 
+A consumer pins one release and installs it with `install.sh` from `main`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/psyb0t/android-lab/main/install.sh \
+  | ANDROID_LAB_ACCEPT_ANDROID_LICENSES=yes bash -s -- <version> [--emulator] [--api <api>]
+```
+
+The installer exits early when the requested tags already exist. Otherwise it shallow-clones `v<version>`, checks that the tag's `VERSION` matches, runs that tag's `make dev-image` and, with `--emulator`, `make image`, then deletes the checkout. It prints the image names on stdout and logs JSON lines on stderr. `ANDROID_LAB_REPOSITORY` selects another Git URL, such as a fork. The emulator build bind-mounts the checkout through the Docker daemon. When the installer runs inside a container that uses the host socket, pass `--work-dir` with a directory that exists at the same path on the host.
+
+Every release keeps this contract so the current installer can build any older tag: a root `VERSION` file, and `dev-image` and `image` Make targets that accept `ANDROID_API` and `ANDROID_LAB_ACCEPT_ANDROID_LICENSES=yes`. A tag stops building once Alpine removes a package version its `Dockerfile.dev` pins.
+
+Release tags are `v<version>` and must point at a commit whose `VERSION` holds the same version. The pipeline creates a GitHub Release for each tag after the checks pass.
+
 The tools live in `/opt/android-lab`. `android-lab version`, `android-lab gradle`, `android-lab check` and `android-lab <device-operation>` call those embedded scripts. A derived image keeps the same interface.
 
 ## Workspace and state

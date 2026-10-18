@@ -2,19 +2,19 @@
 
 All notable Android lab releases are documented here.
 
-## Unreleased
+## [0.13.0] - 2026-10-18
 
 ### Added
 
+- `install.sh` builds the local images for one tagged release. It is meant for `curl | bash`, keeps images that already exist, checks the tag's `VERSION`, and needs only Bash, Git, Make and Docker on the host. `make test` covers it with stubbed Docker, Git and Make.
+- Tag pushes create a GitHub Release after the checks pass.
 - Portable Android Lab skills and setup references, with README instructions for installing them in another Android project.
-
 - Codeberg and GitLab mirrors, scheduled mirror issue sync, and public archive jobs.
 
 ### Changed
 
 - The README documents generic port forwarding without launcher-specific protocols.
 - Make sizes tool CPU limits and Gradle workers for the Docker host, capped at ten CPUs.
-
 - Split Dikciz Launcher into a standalone repository. Android Lab now embeds generic Gradle, emulator and device commands in local versioned tooling images.
 - Consumers build Android Lab images locally, then use their own Makefiles. Images are not published to a registry.
 - Gradle projects may live at the consumer workspace root. Controllers use explicit host workspace paths and workspace-specific Compose names.
@@ -22,12 +22,14 @@ All notable Android lab releases are documented here.
 ### Fixed
 
 - Lab contract tests check the configured Gradle worker count instead of requiring ten workers on every runner.
+- The pipeline's concurrency group no longer collides with the reusable code workflow's group.
+- The development image pins `shfmt` 3.13.1-r3. Alpine removed the -r2 rebuild, which broke `make dev-image`.
 
 ### Migration
 
-- Build both images with `make build` in Android Lab after SDK license acceptance, then run Dikciz operations from its separate checkout.
+- Build both images with `install.sh` or `make build` in Android Lab after SDK license acceptance, then run Dikciz operations from its separate checkout.
 - Preserve `.android-lab/` when migrating. It contains the saved phone and stable signing identity.
-- Earlier entries below describe the combined lab and launcher repository.
+- Changelog entries before 0.13.0 describe the combined lab and launcher repository.
 
 ## [0.12.0] - 2026-10-06
 
