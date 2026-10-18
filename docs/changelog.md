@@ -2,11 +2,20 @@
 
 All notable Android lab releases are documented here.
 
-## Unreleased
+## [0.14.0] - 2026-10-18
 
 ### Added
 
 - `AGENTS.md` is tracked. It documents the lab workflow and the version references to update when `VERSION` changes.
+- The `android-lab` skill is published to ClawHub on each release. It tells an agent how to pick a release from the tags, install the images, build with Gradle, run the emulator, install APKs, inspect the UI and forward ports from the app's own directory, with the exact `docker run` commands.
+
+### Fixed
+
+- `android-lab start` publishes the web viewer on 127.0.0.1:61326 by default. Before, Compose bound 61325 while the readiness check waited for 61326, so `start` failed unless `ANDROID_LAB_VNC_HOST_PORT` was set.
+
+### Migration
+
+- On 0.13.0, set `ANDROID_LAB_VNC_HOST_PORT=61326` for lifecycle commands, or install 0.14.0.
 
 ## [0.13.0] - 2026-10-18
 

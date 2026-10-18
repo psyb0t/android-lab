@@ -33,3 +33,15 @@ jobs:
     permissions:
       contents: write
     uses: psyb0t/reusable-github-workflows/.github/workflows/release-workflow.yml@master
+  # Validates the android-lab skill on every push and publishes it to ClawHub on
+  # tag pushes, once the checks pass.
+  clawhub:
+    needs: [code]
+    permissions:
+      contents: read
+    uses: psyb0t/reusable-github-workflows/.github/workflows/clawhub-publish.yml@master
+    with:
+      skill_names: '["android-lab"]'
+      plugin_names: "[]"
+    secrets:
+      clawhub_token: ${{ secrets.CLAWHUB_TOKEN }}

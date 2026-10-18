@@ -208,6 +208,8 @@ start() {
 	default_vnc_port="$SHARED_VNC_PORT"
 	host_port="${ANDROID_LAB_VNC_HOST_PORT:-$default_vnc_port}"
 	validate_tcp_port ANDROID_LAB_VNC_HOST_PORT "$host_port"
+	# Compose publishes the viewer on this port; the readiness check expects the same one.
+	export ANDROID_LAB_VNC_HOST_PORT="$host_port"
 	ensure_lab_directories
 	ensure_image
 	detect_kvm_gid

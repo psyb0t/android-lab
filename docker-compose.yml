@@ -172,7 +172,7 @@ services:
       - /tmp:rw,noexec,nosuid,size=64m
     networks: [device, edge]
     ports:
-      - "127.0.0.1:${ANDROID_LAB_VNC_HOST_PORT:-61325}:61325"
+      - "127.0.0.1:${ANDROID_LAB_VNC_HOST_PORT:-61326}:61325"
     command: ["novnc_server", "--listen", "61325", "--vnc", "emulator:5900"]
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:61325/vnc.html"]
