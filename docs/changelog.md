@@ -2,6 +2,24 @@
 
 All notable Android lab releases are documented here.
 
+## [0.14.1] - 2026-10-19
+
+### Added
+
+- `ANDROID_LAB_EMULATOR_MEMORY_LIMIT` overrides the emulator memory cap. `start` accepts a whole number followed by `m` or `g` and rejects anything else.
+
+### Fixed
+
+- The emulator container's memory cap is 12g instead of 8g. A 4 GiB guest with software rendering holds about 7.4 GiB, so long test runs hit the 8g cap and the kernel killed the emulator mid-run.
+
+### Migration
+
+- A running lab keeps its old cap until `android-lab restart` recreates the emulator with this release.
+
+### Documentation
+
+- The README and the installer's usage comment write `<version>` and show how to pick a release from the tags, as the `android-lab` skill already does. A release now changes only `VERSION`.
+
 ## [0.14.0] - 2026-10-18
 
 ### Added

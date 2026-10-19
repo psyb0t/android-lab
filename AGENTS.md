@@ -59,12 +59,9 @@ resource limits, and artifact paths. `docs/integration.md` owns consumer setup. 
 
 ## Releases
 
-`VERSION` is the canonical version. When a release bumps it, update every current copy in the same release commit, then search for the old version to catch any you missed:
+`VERSION` is the only file that names the current version. A release bumps it alone, then searches for the old version to make sure no other copy crept in.
 
-- `README.md`: the installer command (`bash -s -- <version>`), the `v<version>` tag, both image names, the `docker run` example, and `FROM android-lab:<version>`.
-- The usage comment at the top of `install.sh`.
-
-The published `android-lab` skill names no version. It tells agents to use the project's pinned version or the highest `v*` tag, so it needs no change on a bump. Keep it that way. ClawHub publishes it from each tag.
+`README.md`, the usage comment in `install.sh`, the published `android-lab` skill and the docs write `<version>` and tell the reader to pick a release from the tags and pin it. Never put a concrete version in them, so a release needs no documentation change. ClawHub publishes the skill from each tag.
 
 Leave older `docs/changelog.md` entries untouched; they are history. `scripts/test-install.sh` uses its own fixture version and does not follow `VERSION`. Release tags are `v<version>` on a commit whose `VERSION` matches.
 

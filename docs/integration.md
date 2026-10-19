@@ -41,6 +41,7 @@ The default Compose name is a hash of the workspace path. `ANDROID_LAB_COMPOSE_P
 | `ANDROID_LAB_VNC_HOST_PORT` | Viewer loopback port, default 61326. |
 | `ANDROID_LAB_FORWARD_HOST_PORT`, `ANDROID_LAB_FORWARD_DEVICE_PORT` | First tunnel host/device ports, default 19001. |
 | `ANDROID_LAB_MCP_HOST_PORT`, `ANDROID_LAB_MCP_DEVICE_PORT` | Second TCP tunnel host/device ports, default 19002. |
+| `ANDROID_LAB_EMULATOR_MEMORY_LIMIT` | Emulator container memory cap, default `12g`. A 4 GiB guest with software rendering uses about 7.4 GiB, and a lower cap lets the kernel kill the emulator under load. `start` accepts a whole number followed by `m` or `g`. |
 | `ANDROID_LAB_TOOL_CPU_LIMIT`, `ANDROID_LAB_TOOL_MEMORY_LIMIT`, `ANDROID_LAB_TOOL_PIDS_LIMIT` | Make's tooling-container bounds. CPU count defaults to the Docker host's capacity, capped at 10; memory and PIDs default to 8g and 2048. |
 | `ANDROID_LAB_ACCESSIBILITY_SERVICE_CLASS` | Dotted app service class for explicitly requested accessibility enable/disable operations. |
 | `ANDROID_LAB_EXTENSION` | Explicit workspace-relative trusted shell extension, described below. |

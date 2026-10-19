@@ -133,6 +133,16 @@ validate_tcp_port() {
 	exit 1
 }
 
+validate_memory_limit() {
+	local name="$1"
+	local value="$2"
+	if [[ "$value" =~ ^[1-9][0-9]{0,5}[mg]$ ]]; then
+		return 0
+	fi
+	log ERROR "${name} must be a whole number of megabytes or gigabytes, such as 12g"
+	exit 1
+}
+
 detect_kvm_gid() {
 	local probe_name
 	probe_name="android-lab-kvm-gid-${RANDOM}-${RANDOM}"
@@ -210,6 +220,9 @@ start() {
 	validate_tcp_port ANDROID_LAB_VNC_HOST_PORT "$host_port"
 	# Compose publishes the viewer on this port; the readiness check expects the same one.
 	export ANDROID_LAB_VNC_HOST_PORT="$host_port"
+	if [[ -n "${ANDROID_LAB_EMULATOR_MEMORY_LIMIT:-}" ]]; then
+		validate_memory_limit ANDROID_LAB_EMULATOR_MEMORY_LIMIT "$ANDROID_LAB_EMULATOR_MEMORY_LIMIT"
+	fi
 	ensure_lab_directories
 	ensure_image
 	detect_kvm_gid

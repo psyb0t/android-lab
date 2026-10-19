@@ -67,7 +67,9 @@ services:
     security_opt: [no-new-privileges:true]
     init: true
     pids_limit: 512
-    mem_limit: 8g
+    # A 4 GiB guest with software rendering holds about 7.4 GiB. At an 8g cap the
+    # kernel killed the emulator mid-run once the page cache could not be reclaimed.
+    mem_limit: ${ANDROID_LAB_EMULATOR_MEMORY_LIMIT:-12g}
     cpus: "4.0"
     restart: "no"
     logging:

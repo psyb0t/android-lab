@@ -2,7 +2,7 @@
 # Builds the local Android Lab images for one tagged release.
 #
 #   curl -fsSL https://raw.githubusercontent.com/psyb0t/android-lab/main/install.sh |
-#     ANDROID_LAB_ACCEPT_ANDROID_LICENSES=yes bash -s -- 0.14.0 --emulator
+#     ANDROID_LAB_ACCEPT_ANDROID_LICENSES=yes bash -s -- <version> --emulator
 #
 # The installer always comes from main; the images always come from the
 # requested tag. It relies only on the release-stable contract documented in

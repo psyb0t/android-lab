@@ -10,14 +10,20 @@ Build an Android app, boot a phone, poke its UI. Keep the SDK and emulator out o
 
 The host needs Linux on x86_64, Docker with Compose v2, Make, Git and usable `/dev/kvm`. The build tools use Java 17 and Android API 36. The emulator is a persistent Google APIs x86_64 phone, 1080×2400, with four virtual cores and 4 GiB guest RAM.
 
-Read the [Android SDK license](https://developer.android.com/studio/terms). If you accept it, install a release by its version:
+Pick a release from the [tags](https://github.com/psyb0t/android-lab/tags) and pin it. The commands below write it as `<version>`, without the leading `v`. To print the newest one:
+
+```bash
+git ls-remote --tags --refs https://github.com/psyb0t/android-lab.git 'v*' | sed 's|.*refs/tags/v||' | sort -V | tail -1
+```
+
+Read the [Android SDK license](https://developer.android.com/studio/terms). If you accept it, install that release:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/psyb0t/android-lab/main/install.sh \
-  | ANDROID_LAB_ACCEPT_ANDROID_LICENSES=yes bash -s -- 0.14.0 --emulator
+  | ANDROID_LAB_ACCEPT_ANDROID_LICENSES=yes bash -s -- <version> --emulator
 ```
 
-The installer checks out the `v0.14.0` tag into a temporary directory, builds it with that tag's own Makefile, deletes the checkout and prints the image names. Images that already exist are kept, so a second run returns at once. Drop `--emulator` when you only need the build tools, for example in CI. `--force` rebuilds, `--api` selects another Android API and `--help` lists the rest.
+The installer checks out the `v<version>` tag into a temporary directory, builds it with that tag's own Makefile, deletes the checkout and prints the image names. Images that already exist are kept, so a second run returns at once. Drop `--emulator` when you only need the build tools, for example in CI. `--force` rebuilds, `--api` selects another Android API and `--help` lists the rest.
 
 To build the source you have checked out instead, for example while working on Android Lab itself:
 
@@ -31,8 +37,8 @@ make build
 Either way, these images land on your own Docker daemon:
 
 ```text
-android-lab:0.14.0
-android-lab:0.14.0-emulator-api36
+android-lab:<version>
+android-lab:<version>-emulator-api36
 ```
 
 Nothing is pushed to a registry. Google artifacts are downloaded during your local build and checked against Google's repository metadata. Keep these SDK-equipped images local. The tool image contains ADB, Java, SDK platform/build tools, Python, pytest, shell tooling, Docker/Compose, noVNC and the lab scripts. The emulator image contains the emulator, system image and its display stack.
@@ -51,7 +57,7 @@ docker run --rm --init --user "$(id -u):$(id -g)" \
   -e ANDROID_LAB_WORKSPACE=/work -e ANDROID_PROJECT=. \
   -e GRADLE_TASK=:app:assembleDebug \
   -v "$PWD:/work" -w /work \
-  android-lab:0.14.0 android-lab gradle
+  android-lab:<version> android-lab gradle
 ```
 
 The APK appears in your project's normal build output. Gradle downloads, logs and the stable debug-signing identity stay under that project's `.android-lab/`. Ignore that directory in Git. Run the container as your host UID/GID so it does not leave root-owned output behind.
@@ -87,7 +93,7 @@ Copy the whole directory, including references. Installing instructions does not
 ## Extend the tools
 
 ```dockerfile
-FROM android-lab:0.14.0
+FROM android-lab:<version>
 
 # Install the extra project-specific tools here.
 ```
