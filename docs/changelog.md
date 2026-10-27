@@ -2,6 +2,26 @@
 
 All notable Android lab releases are documented here.
 
+## [0.15.0] - 2026-10-27
+
+### Changed
+
+- The tool image is built on Ubuntu 24.04 instead of the Alpine-based Docker CLI image. Alpine keeps only the newest build of each package, so the exact package pins broke `make dev-image` whenever Alpine published an update.
+- Ubuntu packages in both images come from a fixed snapshot.ubuntu.com date instead of the live archive, so rebuilding a tag installs the same packages.
+- The Docker CLI, Compose and Buildx binaries are copied from the same pinned Docker CLI image as before. jq 1.8.2, ShellCheck 0.11.0, shfmt 3.13.1, noVNC 1.6.0 and websockify 0.13.0 are upstream releases checked against pinned SHA-256 values, at the versions the Alpine image carried.
+- `python3` is Ubuntu's Python 3.12, run from a virtual environment with pytest 9.0.3 installed from the hash-pinned `requirements-pytest.txt`. `python3 -m pytest` works as before.
+- `adb` is the SDK platform-tools build, the same one the emulator image uses, instead of Alpine's `android-tools` package.
+- The issue-pull workflow runs at hours derived from the repository name instead of the same four hours as every other repository.
+
+### Migration
+
+- Images derived from the tool image install extra packages with `apt-get` instead of `apk add`.
+- Python code run in the tool image must support Python 3.12.
+
+### Documentation
+
+- `docs/integration.md` explains which tags keep building after their base distribution moves on.
+
 ## [0.14.1] - 2026-10-19
 
 ### Added

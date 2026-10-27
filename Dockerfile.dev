@@ -1,28 +1,85 @@
 # Docker-only controller for the isolated Android emulator lab.
-FROM docker:29.7.2-cli@sha256:e650b7a58d7f56be91d4f7be799196380a3bbc1bcbc41f1f4dff1b36ac309e1e
+FROM docker:29.7.2-cli@sha256:e650b7a58d7f56be91d4f7be799196380a3bbc1bcbc41f1f4dff1b36ac309e1e AS docker-cli
+
+FROM ubuntu:24.04@sha256:1e0a86e57d247923571b75e0aaf48a1449cf8c543d51fb3e07a4a7d7bfa79316
 
 ARG ANDROID_API=36
 ARG ANDROID_LAB_ACCEPT_ANDROID_LICENSES
+ARG TARGETARCH
 
-RUN apk add --no-cache \
-	android-tools=35.0.2-r21 \
-	bash=5.3.9-r1 \
-	ca-certificates \
-	coreutils=9.11-r0 \
-	curl \
-	diffutils=3.12-r0 \
-	gcompat \
-	jq=1.8.2-r0 \
-	make=4.4.1-r4 \
-	openjdk17-jdk=17.0.20_p8-r0 \
-	patch=2.8-r0 \
-	python3=3.14.8-r0 \
-	py3-pytest=9.0.3-r0 \
-	ripgrep=15.1.0-r0 \
-	shellcheck=0.11.0-r1 \
-	socat=1.8.1.3-r0 \
-	shfmt=3.13.1-r3 \
-	unzip
+# Ubuntu packages come from a fixed snapshot.ubuntu.com date, so the package
+# set never changes and old tags keep building after the live archive moves
+# on. The snapshot is served over HTTPS, so apt uses the CA bundle from the
+# pinned Docker CLI image until the ca-certificates package is installed.
+COPY --from=docker-cli /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+RUN sed -i -E 's#^URIs: http://(archive|security)\.ubuntu\.com/ubuntu/?$#URIs: https://snapshot.ubuntu.com/ubuntu/20261027T000000Z/#' \
+		/etc/apt/sources.list.d/ubuntu.sources \
+	&& ! grep -q '^URIs: http://' /etc/apt/sources.list.d/ubuntu.sources
+
+RUN apt-get -o Acquire::Check-Valid-Until=false update \
+	&& apt-get install --yes --no-install-recommends \
+		bash \
+		ca-certificates \
+		coreutils \
+		curl \
+		diffutils \
+		make \
+		openjdk-17-jdk-headless \
+		patch \
+		procps \
+		python3 \
+		python3-venv \
+		ripgrep \
+		socat \
+		unzip \
+		xz-utils \
+	&& rm -rf /var/lib/apt/lists/*
+
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker-cli /usr/local/libexec/docker/cli-plugins /usr/local/libexec/docker/cli-plugins
+
+# jq, ShellCheck and shfmt are upstream release binaries pinned by checksum.
+RUN set -eu; \
+	case "$TARGETARCH" in \
+		amd64) \
+			jq_sha256="b1c22172dd303f3be49e935aa56aa48a8b7a46e0bc838b4997d3bb451495870f"; \
+			shellcheck_arch="x86_64"; \
+			shellcheck_sha256="8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"; \
+			shfmt_sha256="fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1" \
+			;; \
+		arm64) \
+			jq_sha256="8b85c817833814ddca00a144c33705546355afccf0cf39b188f3cdb48b852309"; \
+			shellcheck_arch="aarch64"; \
+			shellcheck_sha256="12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588"; \
+			shfmt_sha256="32d92acaa5cd8abb29fc49dac123dc412442d5713967819d8af2c29f1b3857c7" \
+			;; \
+		*) exit 1 ;; \
+	esac; \
+	curl --fail --location --retry 3 --output /usr/local/bin/jq \
+		"https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-${TARGETARCH}"; \
+	echo "${jq_sha256}  /usr/local/bin/jq" | sha256sum --check --strict; \
+	curl --fail --location --retry 3 --output /usr/local/bin/shfmt \
+		"https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_${TARGETARCH}"; \
+	echo "${shfmt_sha256}  /usr/local/bin/shfmt" | sha256sum --check --strict; \
+	curl --fail --location --retry 3 --output /tmp/shellcheck.tar.xz \
+		"https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.${shellcheck_arch}.tar.xz"; \
+	echo "${shellcheck_sha256}  /tmp/shellcheck.tar.xz" | sha256sum --check --strict; \
+	tar -xJf /tmp/shellcheck.tar.xz -C /usr/local/bin --strip-components=1 shellcheck-v0.11.0/shellcheck; \
+	rm /tmp/shellcheck.tar.xz; \
+	chmod 0755 /usr/local/bin/jq /usr/local/bin/shfmt /usr/local/bin/shellcheck
+
+# `python3` on PATH resolves to this virtual environment, so consumers can run
+# `python3 -m pytest` while the Ubuntu-managed Python stays untouched.
+COPY requirements-pytest.txt /tmp/requirements-pytest.txt
+
+RUN python3 -m venv /opt/android-lab/python \
+	&& /opt/android-lab/python/bin/pip install \
+		--disable-pip-version-check \
+		--no-cache-dir \
+		--require-hashes \
+		-r /tmp/requirements-pytest.txt \
+	&& rm /tmp/requirements-pytest.txt
 
 COPY scripts/resolve_android_downloads.py /usr/local/bin/resolve_android_downloads.py
 
@@ -75,12 +132,24 @@ RUN set -eux; \
 	rm -rf /tmp/android-lab-platform /tmp/android-lab-platform-tools /tmp/android-lab-build-tools; \
 	rm -f /tmp/platform.zip /tmp/platform-tools.zip /tmp/build-tools.zip /tmp/android-lab-checksums /tmp/android-lab-resolve.log /usr/local/bin/resolve_android_downloads.py
 
-RUN apk add --no-cache \
-	novnc=1.6.0-r1 \
-	websockify=0.13.0-r2
+# noVNC serves the browser viewer. Its launcher finds websockify in
+# utils/websockify, and `novnc_server` keeps the command name the Compose file uses.
+RUN set -eu; \
+	curl --fail --location --retry 3 --output /tmp/novnc.tar.gz \
+		https://github.com/novnc/noVNC/archive/refs/tags/v1.6.0.tar.gz; \
+	curl --fail --location --retry 3 --output /tmp/websockify.tar.gz \
+		https://github.com/novnc/websockify/archive/refs/tags/v0.13.0.tar.gz; \
+	echo "5066103959ef4e9b10f37e5a148627360dd8414e4cf8a7db92bdbd022e728aaa  /tmp/novnc.tar.gz" | sha256sum --check --strict; \
+	echo "b6413e364efd04f3c92ec8c17747e3c4adc20157c2ef1c5d019a26d944a46df8  /tmp/websockify.tar.gz" | sha256sum --check --strict; \
+	mkdir --parents /opt/novnc/utils/websockify; \
+	tar -xzf /tmp/novnc.tar.gz -C /opt/novnc --strip-components=1; \
+	tar -xzf /tmp/websockify.tar.gz -C /opt/novnc/utils/websockify --strip-components=1; \
+	rm /tmp/novnc.tar.gz /tmp/websockify.tar.gz; \
+	ln -s /opt/novnc/utils/novnc_proxy /usr/local/bin/novnc_server
 
 ENV ANDROID_HOME=/opt/android-sdk
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH=/opt/android-lab/python/bin:/opt/android-sdk/platform-tools:${PATH}
 
 WORKDIR /work
 
