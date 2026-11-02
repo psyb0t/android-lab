@@ -2,6 +2,17 @@
 
 All notable Android lab releases are documented here.
 
+## [0.16.0] - 2026-11-02
+
+### Fixed
+
+- Both local images use the signed Ubuntu archive and security repositories over HTTPS, removing the unavailable snapshot service from fresh builds.
+- Package downloads retry transient failures five times. An incomplete package-index update fails the build before installation.
+
+### Migration
+
+- Ubuntu packages now follow distribution updates rather than a fixed snapshot. Rebuilding a tag can install newer distribution packages; retain a tested local image when an identical package set is required.
+
 ## [0.15.0] - 2026-10-27
 
 ### Changed

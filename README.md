@@ -41,6 +41,8 @@ android-lab:<version>
 android-lab:<version>-emulator-api36
 ```
 
+Ubuntu packages come from the signed Ubuntu archive and security repositories over HTTPS. Downloads retry transient failures; incomplete package-index updates stop the build. See [integration](docs/integration.md#local-image-contract) for package reproducibility.
+
 Nothing is pushed to a registry. Google artifacts are downloaded during your local build and checked against Google's repository metadata. Keep these SDK-equipped images local. The tool image contains ADB, Java, SDK platform/build tools, Python, pytest, shell tooling, Docker/Compose, noVNC and the lab scripts. The emulator image contains the emulator, system image and its display stack.
 
 Local image tags derive from `VERSION`. A consumer names the exact version it needs and installs it with the command above. It never picks up an older or newer local image by accident, and several versions can sit side by side. After updating a checkout, run `make build` again. Docker reuses unchanged dependency layers. App source and device data never enter either image.
